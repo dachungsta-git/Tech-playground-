@@ -178,8 +178,7 @@ test("suggestion validation explains the problem and allows a corrected retry", 
   await expect(page.locator("#suggest-status")).toHaveText("Suggestion recorded. Thanks!");
 });
 
-test("a transient suggestion storage failure lets the visitor retry the same topic", async ({page}, info) => {
-  const app = info.testApp;
+test("a transient suggestion storage failure lets the visitor retry the same topic", async ({page, app}) => {
   const fetch = app.fetch;
   let submissions = 0;
   app.fetch = (path, options) => {
