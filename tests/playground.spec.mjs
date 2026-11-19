@@ -178,6 +178,34 @@ test("suggestion validation explains the problem and allows a corrected retry", 
   await expect(page.locator("#suggest-status")).toHaveText("Suggestion recorded. Thanks!");
 });
 
+test("a transient suggestion storage failure lets the visitor retry the same topic", async ({page}, info) => {
+  const app = info.testApp;
+  const fetch = app.fetch;
+  let submissions = 0;
+  app.fetch = (path, options) => {
+    if (path === "/api/suggestions" && options.method === "POST" && ++submissions === 1) {
+      return fetch(path, options, {prepare() { throw new Error("Temporary storage failure"); }});
+    }
+    return fetch(path, options);
+  };
+
+  await open(page);
+  const search = page.getByRole("searchbox", {name: "Find a demo"});
+  const submit = page.getByRole("button", {name: "Suggest this demo"});
+  await search.fill("how paper is made");
+  await submit.click();
+  await expect(page.locator("#suggest-status")).toContainText("Try again");
+  await expect(search).toHaveValue("how paper is made");
+  await expect(submit).toBeEnabled();
+  expect(app.rows()).toEqual([]);
+
+  await submit.click();
+  await expect(page.locator("#suggest-status")).toHaveText("Suggestion recorded. Thanks!");
+  await expect(submit).toBeDisabled();
+  expect(submissions).toBe(2);
+  expect(app.rows()).toMatchObject([{topic: "how paper is made", request_count: 1}]);
+});
+
 test("the demo library remains usable at phone width", async ({page}) => {
   await page.setViewportSize({width: 390, height: 844});
   await open(page);
