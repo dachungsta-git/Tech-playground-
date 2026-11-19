@@ -1,0 +1,11 @@
+{
+  "name": "tech-playground",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/worker.test.mjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}
