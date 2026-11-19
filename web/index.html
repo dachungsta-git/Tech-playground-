@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101118">
+  <meta name="description" content="Play with interactive models of Wi-Fi, GPS, noise cancellation, and airplane wings.">
+  <title>Tech Playground — Tech you can play with</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="shell nav" aria-label="Main navigation">
+      <a class="brand" href="./" aria-label="Tech Playground home"><span class="brand-icon" aria-hidden="true">✳</span> tech<span class="brand-light">playground</span></a>
+      <a class="nav-link" href="#experiments">Explore experiments</a>
+    </nav>
+  </header>
+  <main class="shell">
+    <section class="hero" aria-labelledby="headline">
+      <h1 id="headline">Tech you can <em>play with.</em></h1>
+      <p>Find out how everyday technology works by changing things and seeing what happens.</p>
+    </section>
+    <section id="experiments" aria-label="Interactive experiments">
+      <section class="demo-library" aria-labelledby="library-heading">
+        <div class="catalog-header">
+          <div><h2 id="library-heading">Demo library</h2><p>Browse the collection or find a topic you’re curious about.</p></div>
+          <label class="catalog-search">Find a demo<input id="demo-search" type="search" placeholder="Try flight, satellites, or sound" autocomplete="off" maxlength="80"></label>
+        </div>
+        <p id="demo-count" class="catalog-count" role="status"></p>
+        <div id="demo-list" class="topics" aria-label="Choose an experiment"></div>
+        <div id="demo-empty" class="catalog-empty" hidden>
+          <h3>No demo found</h3>
+          <p>Want us to build this? Send the topic you searched for. We save the topic and a count to help choose future demos. Please leave out personal information.</p>
+          <button type="button" class="mode-button" id="suggest-demo">Suggest this demo</button>
+          <p id="suggest-status" role="status"></p>
+        </div>
+      </section>
+      <article class="experiment" aria-labelledby="lesson-title">
+        <header class="experiment-head">
+          <div>
+            <h2 id="lesson-title" tabindex="-1">How does Wi-Fi reach you?</h2>
+            <p id="lesson-summary">Move your device and add walls to see what happens to the signal.</p>
+          </div>
+          <button id="advanced-toggle" class="mode-button" type="button" aria-expanded="false" aria-controls="advanced-panel">Advanced mode</button>
+        </header>
+        <div class="workbench">
+          <figure class="model">
+            <div class="stage">
+              <button id="flight-motion" type="button" hidden>Pause motion</button>
+              <canvas id="simulation" width="680" height="360" role="img" aria-label="Wi-Fi signal spreading from the router toward your device"></canvas>
+            </div>
+            <section class="airfoil-inset" id="airfoil-inset" aria-labelledby="airfoil-title" hidden>
+              <div class="airfoil-copy">
+                <h3 id="airfoil-title">Wing close-up</h3>
+                <p>Angle of attack is the gap between the wing’s chord and the oncoming air.</p>
+              </div>
+              <svg viewBox="0 0 360 142" role="img" aria-labelledby="airfoil-caption">
+                <title id="airfoil-caption">Wing cross-section at 5 degrees</title>
+                <defs>
+                  <marker id="wing-flow-arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+                    <path d="M0 0 L6 3.5 L0 7" fill="none" stroke="#c2b1ff" stroke-width="1.2"/>
+                  </marker>
+                  <linearGradient id="wing-skin" x2="0" y2="1" gradientUnits="objectBoundingBox">
+                    <stop stop-color="#6eabc3"/><stop offset="1" stop-color="#263e57"/>
+                  </linearGradient>
+                </defs>
+                <line x1="32" y1="85" x2="286" y2="85" stroke="#8595b4" stroke-dasharray="5 5"/>
+                <line x1="340" y1="85" x2="290" y2="85" stroke="#c2b1ff" stroke-width="2" marker-end="url(#wing-flow-arrow)"/>
+                <text x="340" y="108" text-anchor="end" fill="#c2b1ff">Oncoming air</text>
+                <g id="foil-profile" transform="rotate(-5 138 85)">
+                  <path d="M62 85 C128 69 200 53 232 66 C256 76 244 94 224 96 C178 102 97 86 62 85Z" fill="url(#wing-skin)" stroke="#7ce5f2" stroke-width="2"/>
+                  <line x1="62" y1="85" x2="274" y2="85" stroke="#e5f5ff" stroke-dasharray="6 4"/>
+                </g>
+                <path id="foil-angle-arc" fill="none" stroke="#ffca8f" stroke-width="2"/>
+                <text id="foil-angle-label" fill="#ffca8f" text-anchor="middle" x="276" y="29">5°</text>
+                <line x1="32" x2="52" y1="118" y2="118" stroke="#e5f5ff" stroke-dasharray="5 4"/>
+                <text x="58" y="123" fill="#c3c6dc">Wing chord</text>
+              </svg>
+            </section>
+            <figcaption id="legend" class="legend"></figcaption>
+          </figure>
+          <div class="controls" aria-label="Experiment controls">
+            <div class="controls-head"><h3>Controls</h3><button id="reset" class="reset" type="button"><span aria-hidden="true">↺</span> Reset</button></div>
+            <form id="settings"></form>
+            <div class="result">
+              <div id="result-name" class="result-label">Signal strength</div>
+              <output id="result-value" aria-live="polite"></output>
+              <div class="meter" id="meter" aria-hidden="true"><span></span></div>
+              <p id="result-note"></p>
+            </div>
+          </div>
+        </div>
+        <section id="advanced-panel" class="advanced-panel" aria-labelledby="advanced-heading" hidden>
+          <h3 id="advanced-heading">Science &amp; math</h3>
+          <div class="advanced-grid">
+            <div><h4>The real principle</h4><div id="advanced-equation" class="math-equation"></div><p id="advanced-science"></p></div>
+            <div><h4>What the demo calculates</h4><div id="advanced-model" class="math-equation"></div><p id="advanced-live" class="math-live"></p><p id="advanced-limit"></p></div>
+          </div>
+          <a id="advanced-source" class="advanced-source" href=""></a>
+        </section>
+      </article>
+    </section>
+    <section class="explanation" aria-labelledby="explanation-title">
+      <h2 id="explanation-title">What’s happening?</h2>
+      <div id="explanation-grid" class="explanation-grid"></div>
+    </section>
+  </main>
+  <footer class="shell footer"><span>Tech Playground</span><span>Illustrative models of everyday technology</span></footer>
+</body>
+</html>
