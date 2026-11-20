@@ -1,6 +1,6 @@
 # Tech Playground
 
-This is a small library of interactive technology demos. Each includes a simple explanation, animated simulation, adjustable inputs, and an optional Advanced mode. The current deployment is private.
+This is a small library of interactive technology demos. Each includes a simple explanation, animated simulation, adjustable inputs, and an optional Advanced mode.
 
 ## Adding a demo
 
@@ -14,3 +14,9 @@ This is a small library of interactive technology demos. Each includes a simple 
 Only explicit submissions from the no-results screen are sent. The private D1 table `demo_suggestions` keeps normalized topic text, a request count and the latest submission time. It deliberately does not attach an account ID or expose a public read endpoint. Use the Site’s owner tools to review frequent topics before choosing what to build. A count reflects submissions, not unique people.
 
 The hosting manifest is a template. Register a separate Site and add its project ID before deploying. This repository does not include production credentials or visitor data.
+
+## Regression tests
+
+Use Node.js 24. Run `npm test` for Worker and suggestion-storage tests; this suite has no third-party dependencies. Run `npm run test:smoke` for deterministic tests of the seven newer simulations. For browser tests, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser`. If Chromium is already installed, set `CHROMIUM_PATH` to its executable path to use it instead.
+
+Playwright exercises the real page and Worker in Chromium with a fresh in-memory SQLite database for each test. It does not visit the live site or send it suggestions. GitHub Actions runs all three suites and the build for pull requests and pushes to `main`.

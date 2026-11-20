@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101118">
-  <meta name="description" content="Play with interactive models of Wi-Fi, GPS, noise cancellation, and airplane wings.">
+  <meta name="description" content="Play with interactive models of Wi-Fi, GPS, noise cancellation, airplane wings, vacuum tubes, transistors, and how CPUs and ALUs work.">
   <title>Tech Playground — Tech you can play with</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
@@ -44,7 +44,7 @@
           </div>
           <button id="advanced-toggle" class="mode-button" type="button" aria-expanded="false" aria-controls="advanced-panel">Advanced mode</button>
         </header>
-        <div class="workbench">
+        <div class="workbench" id="standard-workbench">
           <figure class="model">
             <div class="stage">
               <button id="flight-motion" type="button" hidden>Pause motion</button>
@@ -91,6 +91,241 @@
             </div>
           </div>
         </div>
+        <section id="cpu-workbench" class="cpu-workbench" aria-labelledby="cpu-lab-title" hidden>
+          <header class="cpu-header">
+            <div><p class="cpu-eyebrow">CPU Lab · Chapter 1 of 5</p>
+            <h3 id="cpu-lab-title">Follow the numbers</h3><p>Load 3 and 5 from memory, add them, then save 8.</p></div>
+            <div class="cpu-actions" aria-label="CPU controls">
+              <button id="cpu-step" type="button" class="cpu-primary">Step</button>
+              <button id="cpu-run" type="button" class="mode-button">Run</button>
+              <button id="cpu-reset" type="button" class="mode-button">Reset</button>
+            </div>
+          </header>
+          <ol class="cpu-stages" aria-label="Instruction phases">
+            <li id="cpu-stage-fetch">1. Fetch</li><li id="cpu-stage-decode">2. Decode</li><li id="cpu-stage-execute">3. Execute</li>
+          </ol>
+          <div class="cpu-status" role="status" aria-atomic="true">
+            <strong id="cpu-status-title"></strong><p id="cpu-status-note"></p>
+          </div>
+          <div class="cpu-map">
+            <section class="cpu-card cpu-memory" aria-labelledby="cpu-memory-title">
+              <h4 id="cpu-memory-title">Memory <small>outside the CPU</small></h4>
+              <h5>Program</h5><ol id="cpu-program" class="cpu-program"></ol>
+              <h5>Data</h5><dl id="cpu-data" class="cpu-values"></dl>
+            </section>
+            <div id="cpu-bridge" class="cpu-bridge" aria-hidden="true"><span></span></div>
+            <section class="cpu-card cpu-core" aria-labelledby="cpu-core-title">
+              <h4 id="cpu-core-title">CPU <small>the processor</small></h4>
+              <div id="cpu-control-block" class="cpu-block"><h5>Control unit</h5>
+                <dl id="cpu-control-values" class="cpu-values"></dl>
+              </div>
+              <div id="cpu-register-block" class="cpu-block"><h5>Registers <small>small, fast storage</small></h5>
+                <dl id="cpu-registers" class="cpu-values"></dl>
+              </div>
+              <div id="cpu-alu-block" class="cpu-block"><h5>ALU <small>does the math</small></h5>
+                <p id="cpu-alu"></p><a class="advanced-source cpu-next" id="cpu-go-alu" href="#alu">Next: Inside the ALU</a>
+              </div>
+            </section>
+          </div>
+          <section class="cpu-roadmap" aria-labelledby="cpu-roadmap-title">
+            <h4 id="cpu-roadmap-title">The CPU Lab series</h4>
+            <ol>
+              <li aria-current="step">1. The whole CPU <span>Here</span></li>
+              <li><a id="cpu-roadmap-alu" href="#alu">2. Inside the ALU</a></li>
+              <li><a id="cpu-go-memory" href="#memory">3. Registers &amp; memory</a></li>
+              <li><a id="cpu-go-cache" href="#cache">4. Cache</a></li>
+              <li><a id="cpu-go-pipeline" href="#pipeline">5. Pipelines &amp; branches</a></li>
+            </ol>
+            <a class="advanced-source" href="#transistors">Zoom further in: the transistor demo</a>
+          </section>
+        </section>
+        <section id="alu-workbench" class="cpu-workbench alu-workbench" aria-labelledby="alu-lab-title" hidden>
+          <header class="cpu-header">
+            <div><p class="cpu-eyebrow">CPU Lab · Chapter 2 of 5</p>
+            <h3 id="alu-lab-title">Build a sum, one bit at a time</h3><p>Flip any input bit. Then step from the ones place upward and follow the carry.</p></div>
+            <div class="cpu-actions" aria-label="Adder controls">
+              <button id="alu-step" type="button" class="cpu-primary">Step</button>
+              <button id="alu-run" type="button" class="mode-button">Run</button>
+              <button id="alu-reset" type="button" class="mode-button">Reset</button>
+            </div>
+          </header>
+          <div class="alu-inputs">
+            <div class="alu-numbers"><span>A</span><strong id="alu-number-a"></strong><span>+</span><span>B</span><strong id="alu-number-b"></strong></div>
+            <div class="alu-presets" aria-label="Example operands">
+              <button type="button" id="alu-example-carry" class="mode-button">Try 15 + 1</button>
+              <button type="button" id="alu-example-overflow" class="mode-button">Try 7 + 1</button>
+            </div>
+          </div>
+          <div class="cpu-status alu-status" role="status" aria-atomic="true">
+            <strong id="alu-status-title"></strong><p id="alu-status-note"></p>
+          </div>
+          <p class="alu-flow-label">Carry flows from the 1s place toward the 8s place</p>
+          <ol id="alu-chain" class="alu-chain" aria-label="Four linked full adders"></ol>
+          <section class="alu-results" aria-labelledby="alu-result-heading">
+            <h4 id="alu-result-heading">The result and its flags</h4>
+            <dl>
+              <div><dt>Stored sum (4 bits)</dt><dd id="alu-sum">—</dd></div>
+              <div><dt>Carry out (unsigned)</dt><dd id="alu-carry">—</dd></div>
+              <div><dt>Signed overflow</dt><dd id="alu-overflow">—</dd></div>
+            </dl>
+            <p id="alu-flags-note">Flags appear after the final bit.</p>
+          </section>
+          <section class="cpu-roadmap" aria-labelledby="alu-roadmap-title">
+            <h4 id="alu-roadmap-title">The CPU Lab series</h4>
+            <ol>
+              <li><a id="alu-go-cpu" href="#cpu">1. The whole CPU</a></li>
+              <li aria-current="step">2. Inside the ALU <span>Here</span></li>
+              <li><a id="alu-go-memory" href="#memory">3. Registers &amp; memory</a></li>
+              <li><a id="alu-go-cache" href="#cache">4. Cache</a></li>
+              <li><a id="alu-go-pipeline" href="#pipeline">5. Pipelines &amp; branches</a></li>
+            </ol>
+            <a class="advanced-source" href="#transistors">Zoom further in: the transistor demo</a>
+          </section>
+        </section>
+        <section id="memory-workbench" class="cpu-workbench memory-workbench" aria-labelledby="memory-lab-title" hidden>
+          <header class="cpu-header">
+            <div><p class="cpu-eyebrow">CPU Lab · Chapter 3 of 5</p>
+            <h3 id="memory-lab-title">Copy it in. Change it. Write it back.</h3><p>Try LOAD, ADD 5, and STORE in order, then try another register or address.</p></div>
+            <div class="cpu-actions"><button id="memory-reset" type="button" class="mode-button">Reset</button></div>
+          </header>
+          <div class="memory-instructions" aria-label="Memory experiment controls">
+            <div><label for="memory-source">Read from RAM</label>
+              <select id="memory-source"><option value="0">[A] · address 0</option><option value="1">[B] · address 1</option><option value="2">[OUT] · address 2</option></select>
+              <button id="memory-load" type="button" class="cpu-primary">LOAD</button></div>
+            <div><label for="memory-register">Work in register</label>
+              <select id="memory-register"><option value="0">R0</option><option value="1">R1</option></select>
+              <button id="memory-add" type="button" class="mode-button">ADD 5</button></div>
+            <div><label for="memory-destination">Write to RAM</label>
+              <select id="memory-destination"><option value="0">[A] · address 0</option><option value="1">[B] · address 1</option><option value="2" selected>[OUT] · address 2</option></select>
+              <button id="memory-store" type="button" class="mode-button">STORE</button></div>
+          </div>
+          <div class="cpu-status memory-status" role="status" aria-atomic="true">
+            <strong id="memory-status-title"></strong><p id="memory-status-note"></p>
+          </div>
+          <div class="cpu-map memory-map">
+            <section class="cpu-card" aria-labelledby="memory-ram-title">
+              <h4 id="memory-ram-title">RAM <small>main memory</small></h4>
+              <p>Addressable slots hold copies of values.</p>
+              <dl id="memory-ram-values" class="cpu-values memory-values"></dl>
+            </section>
+            <div id="memory-bridge" class="cpu-bridge memory-bridge" aria-hidden="true"></div>
+            <section class="cpu-card" aria-labelledby="memory-cpu-title">
+              <h4 id="memory-cpu-title">CPU <small>register file + ALU</small></h4>
+              <dl id="memory-reg-values" class="cpu-values memory-values"></dl>
+              <div id="memory-alu-block" class="cpu-block"><h5>ALU <small>does the math</small></h5><p id="memory-alu-result"></p></div>
+            </section>
+          </div>
+          <section class="cpu-roadmap" aria-labelledby="memory-roadmap-title">
+            <h4 id="memory-roadmap-title">The CPU Lab series</h4>
+            <ol>
+              <li><a id="memory-go-cpu" href="#cpu">1. The whole CPU</a></li>
+              <li><a id="memory-go-alu" href="#alu">2. Inside the ALU</a></li>
+              <li aria-current="step">3. Registers &amp; memory <span>Here</span></li>
+              <li><a id="memory-go-cache" href="#cache">4. Cache</a></li>
+              <li><a id="memory-go-pipeline" href="#pipeline">5. Pipelines &amp; branches</a></li>
+            </ol>
+          </section>
+        </section>
+        <section id="cache-workbench" class="cpu-workbench cache-workbench" aria-labelledby="cache-lab-title" hidden>
+          <header class="cpu-header">
+            <div><p class="cpu-eyebrow">CPU Lab · Chapter 4 of 5</p>
+            <h3 id="cache-lab-title">The second time should be faster</h3>
+            <p>Run the same four reads twice. Will the cache remember them?</p></div>
+            <div class="cpu-actions" aria-label="Cache experiment controls">
+              <button id="cache-step" type="button" class="cpu-primary">Step</button>
+              <button id="cache-run" type="button" class="mode-button">Run</button>
+              <button id="cache-reset" type="button" class="mode-button">Reset</button>
+            </div>
+          </header>
+          <div class="cache-controls">
+            <label for="cache-pattern">Access pattern <select id="cache-pattern">
+              <option value="reuse">Reuse · 0, 1, 0, 1</option><option value="conflict">Conflict · 0, 2, 0, 2</option>
+            </select></label>
+            <label for="cache-size">Cache size <select id="cache-size">
+              <option value="2">2 lines</option><option value="4">4 lines</option>
+            </select></label>
+          </div>
+          <div class="cpu-status cache-status" role="status" aria-atomic="true">
+            <strong id="cache-title"></strong><p id="cache-note"></p>
+          </div>
+          <div class="cache-board">
+            <section class="cpu-card cache-core" aria-labelledby="cache-core-title">
+              <h4 id="cache-core-title">CPU</h4><p id="cache-cpu-value"></p>
+            </section>
+            <div id="cache-wire-near" class="cache-wire cache-wire-near" aria-hidden="true"></div>
+            <section class="cpu-card" aria-labelledby="cache-lines-title">
+              <h4 id="cache-lines-title">Cache</h4><dl id="cache-lines" class="cpu-values cache-lines"></dl>
+            </section>
+            <div id="cache-wire-far" class="cache-wire cache-wire-far" aria-hidden="true"></div>
+            <section class="cpu-card cache-ram" aria-labelledby="cache-ram-title">
+              <h4 id="cache-ram-title">RAM</h4><dl id="cache-ram" class="cpu-values cache-lines"></dl>
+            </section>
+          </div>
+          <div class="cache-history" aria-label="Two passes through the access pattern">
+            <div><h4>Pass 1</h4><ol id="cache-pass-1"></ol></div>
+            <div><h4>Pass 2</h4><ol id="cache-pass-2"></ol></div>
+          </div>
+          <dl class="cache-metrics cpu-values">
+            <div><dt>Hits</dt><dd id="cache-hits">0</dd></div>
+            <div><dt>Misses</dt><dd id="cache-misses">0</dd></div>
+            <div><dt>Pass 2 hit rate</dt><dd id="cache-rate">—</dd></div>
+            <div><dt>Model ticks</dt><dd id="cache-ticks">0</dd></div>
+          </dl>
+          <section class="cpu-roadmap" aria-labelledby="cache-roadmap-title">
+            <h4 id="cache-roadmap-title">The CPU Lab series</h4>
+            <ol>
+              <li><a id="cache-go-cpu" href="#cpu">1. The whole CPU</a></li>
+              <li><a id="cache-go-alu" href="#alu">2. Inside the ALU</a></li>
+              <li><a id="cache-go-memory" href="#memory">3. Registers &amp; memory</a></li>
+              <li aria-current="step">4. Cache <span>Here</span></li>
+              <li><a id="cache-go-pipeline" href="#pipeline">5. Pipelines &amp; branches</a></li>
+            </ol>
+          </section>
+        </section>
+        <section id="pipeline-workbench" class="cpu-workbench pipeline-workbench" aria-labelledby="pipeline-lab-title" hidden>
+          <header class="cpu-header">
+            <div><p class="cpu-eyebrow">CPU Lab · Chapter 5 of 5</p>
+            <h3 id="pipeline-lab-title">Work ahead. Recover if you guess wrong.</h3>
+            <p>Step through a program that loads 3, adds 5, and saves 8. A branch decides which route gets to run.</p></div>
+            <div class="cpu-actions" aria-label="Pipeline controls">
+              <button id="pipeline-step" class="cpu-primary" type="button">Step cycle</button>
+              <button id="pipeline-run" class="mode-button" type="button">Run</button>
+              <button id="pipeline-reset" class="mode-button" type="button">Reset</button>
+            </div>
+          </header>
+          <div class="pipeline-controls">
+            <label for="pipeline-mode">Execution <select id="pipeline-mode"><option value="overlap">Pipelined</option><option value="serial">One instruction at a time</option></select></label>
+            <label for="pipeline-prediction">Branch prediction <select id="pipeline-prediction"><option value="fall">Guess fall-through</option><option value="taken">Guess taken</option><option value="wait">Off · wait for the branch</option></select></label>
+          </div>
+          <div class="cpu-status" role="status" aria-atomic="true"><strong id="pipeline-status-title"></strong><p id="pipeline-status-note"></p></div>
+          <div id="pipeline-stages" class="pipeline-stages" aria-label="Stages this cycle"></div>
+          <dl id="pipeline-counts" class="pipeline-counts" aria-label="Pipeline counters and committed state"></dl>
+          <div class="pipeline-trace" tabindex="0" role="region" aria-label="Cycle timeline, most recent first">
+            <table><caption>Cycle timeline · newest first</caption>
+            <thead><tr><th scope="col">Cycle</th><th scope="col">Fetch</th><th scope="col">Decode</th><th scope="col">Execute</th></tr></thead>
+            <tbody id="pipeline-history"></tbody></table>
+          </div>
+          <p class="pipeline-key">A <strong>flushed</strong> instruction is discarded. Its result never reaches the register or RAM.</p>
+          <section class="cpu-roadmap" aria-labelledby="pipeline-roadmap-title">
+            <h4 id="pipeline-roadmap-title">The CPU Lab series</h4>
+            <ol>
+              <li><a id="pipeline-go-cpu" href="#cpu">1. The whole CPU</a></li>
+              <li><a id="pipeline-go-alu" href="#alu">2. Inside the ALU</a></li>
+              <li><a id="pipeline-go-memory" href="#memory">3. Registers &amp; memory</a></li>
+              <li><a id="pipeline-go-cache" href="#cache">4. Cache</a></li>
+              <li aria-current="step">5. Pipelines &amp; branches <span>Here</span></li>
+            </ol>
+          </section>
+        </section>
+        <section id="device-comparison" class="device-comparison" aria-labelledby="comparison-title" hidden>
+          <h3 id="comparison-title">Same job, different physics</h3>
+          <div>
+            <article><h4>Triode · through a vacuum</h4><p>A heated cathode emits electrons. A wire grid limits how many reach the positive plate. Make the grid more negative to reduce current.</p></article>
+            <article><h4>nMOS transistor · through silicon</h4><p>An insulated gate creates a conducting channel. Make the gate more positive to turn this nMOS on. Drain voltage drives electrons through the channel; no heater required.</p></article>
+          </div>
+          <a id="tube-to-transistor" class="advanced-source" href="#transistors" hidden>Try controlling a transistor →</a>
+          <a id="transistor-to-tube" class="advanced-source" href="#vacuum-tubes" hidden>Try controlling a vacuum tube →</a>
+        </section>
         <section id="advanced-panel" class="advanced-panel" aria-labelledby="advanced-heading" hidden>
           <h3 id="advanced-heading">Science &amp; math</h3>
           <div class="advanced-grid">
