@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/worker.test.mjs",
+    "test:smoke": "node --test scripts/test-*.mjs",
     "test:browser": "playwright test"
   },
   "devDependencies": {

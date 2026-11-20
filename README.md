@@ -17,6 +17,6 @@ The hosting manifest is a template. Register a separate Site and add its project
 
 ## Regression tests
 
-Use Node.js 24. Run `npm test` for Worker and suggestion-storage tests; this suite has no third-party dependencies. For browser tests, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser`. If Chromium is already installed, set `CHROMIUM_PATH` to its executable path to use it instead.
+Use Node.js 24. Run `npm test` for Worker and suggestion-storage tests; this suite has no third-party dependencies. Run `npm run test:smoke` for deterministic tests of the seven newer simulations. For browser tests, run `npm ci`, `npx playwright install chromium`, then `npm run test:browser`. If Chromium is already installed, set `CHROMIUM_PATH` to its executable path to use it instead.
 
-Playwright exercises the real page and Worker in Chromium with a fresh in-memory SQLite database for each test. It does not visit the live site or send it suggestions. GitHub Actions runs both suites and the build for pull requests and pushes to `main`.
+Playwright exercises the real page and Worker in Chromium with a fresh in-memory SQLite database for each test. It does not visit the live site or send it suggestions. GitHub Actions runs all three suites and the build for pull requests and pushes to `main`.

@@ -9,8 +9,9 @@ const open = (page, slug = "") => page.goto(origin + "/" + (slug ? "#" + slug : 
 const test = base.extend({
   app: [async ({page}, use) => {
     const app = fixture();
-    await page.route(origin + "/**", async route => {
+    await page.route("**/*", async route => {
       const request = route.request();
+      if (new URL(request.url()).origin !== origin) return route.abort();
       const response = await app.fetch(new URL(request.url()).pathname, {
         method: request.method(),
         headers: await request.allHeaders(),
@@ -92,12 +93,12 @@ test("wing lift peaks and drops at stall, with the close-up synchronized", async
   await expect(page.locator("#airfoil-inset")).toBeHidden();
 });
 
-test("all four canvases animate, Pause freezes pixels, and reduced-motion preference is respected", async ({page}) => {
+test("all six canvases animate, Pause freezes pixels, and reduced-motion preference is respected", async ({page}) => {
   test.setTimeout(45_000);
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const frame = () => page.locator("#simulation").evaluate(canvas => canvas.toDataURL());
-  for (const name of ["Wi-Fi", "GPS", "Noise cancellation", "Airplane wings"]) {
+  for (const name of ["Wi-Fi", "GPS", "Noise cancellation", "Airplane wings", "Transistors", "Vacuum tube triode"]) {
     if (name === "Wi-Fi") await open(page);
     else await demoButtons(page).filter({hasText: name}).click();
     const first = await frame();
@@ -118,7 +119,7 @@ test("catalog filters normalized keywords, keeps selection, and supports history
   await open(page);
   const search = page.getByRole("searchbox", {name: "Find a demo"});
   for (const name of ["Wi-Fi", "GPS", "Noise cancellation", "Airplane wings"]) await expect(page.getByRole("button", {name, exact: true})).toBeVisible();
-  await expect(page.locator("#demo-count")).toHaveText("4 demos");
+  await expect(page.locator("#demo-count")).toHaveText("11 demos");
   await search.fill("  ＳＡＴＥＬＬＩＴＥ   navigation ");
   await expect(page.locator("#demo-count")).toHaveText("1 demo");
   await expect(demoButtons(page)).toHaveCount(1);
@@ -212,4 +213,204 @@ test("the demo library remains usable at phone width", async ({page}) => {
   await page.getByRole("button", {name: "Airplane wings", exact: true}).click();
   await expect(control(page, "Angle of attack")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test("seven newer demos can be found and opened without offering a suggestion", async ({page}) => {
+  await open(page);
+  const search = page.getByRole("searchbox", {name: "Find a demo"});
+  for (const [query, name, slug] of [
+    ["mosfet", "Transistors", "transistors"],
+    ["processor", "CPU Lab", "cpu"],
+    ["ripple carry", "Inside the ALU", "alu"],
+    ["register file", "Registers & memory", "memory"],
+    ["direct mapped", "CPU cache", "cache"],
+    ["branch prediction", "Pipelines & branches", "pipeline"],
+    ["thermionic emission", "Vacuum tube triode", "vacuum-tubes"],
+  ]) {
+    await search.fill(query);
+    await expect(demoButtons(page)).toHaveCount(1);
+    await expect(page.getByRole("button", {name: "Suggest this demo"})).toBeHidden();
+    await page.getByRole("button", {name, exact: true}).click();
+    await expect(page).toHaveURL(new RegExp("#" + slug + "$"));
+  }
+});
+
+test("a transistor needs a channel and drain voltage to conduct; reset switches it off", async ({page}) => {
+  await open(page, "transistors");
+  const gate = control(page, "Gate voltage");
+  const drain = control(page, "Drain voltage");
+  await expect(output(page)).toHaveText("0.00 mA");
+  await gate.press("End");
+  await expect(output(page)).toHaveText("2.72 mA");
+  await drain.press("Home");
+  await expect(gate).toHaveValue("3.3");
+  await expect(output(page)).toHaveText("0.00 mA");
+  await page.getByRole("button", {name: "Reset", exact: true}).click();
+  await expect(gate).toHaveValue("0.8");
+  await expect(drain).toHaveValue("0.8");
+  await expect(output(page)).toHaveText("0.00 mA");
+});
+
+test("CPU fetch, decode and execute writes 8 to output memory, halts, and resets", async ({page}) => {
+  await open(page, "cpu");
+  const step = page.getByRole("button", {name: "Step", exact: true});
+  const reset = page.getByRole("button", {name: "Reset", exact: true});
+  const memoryOut = page.locator("#cpu-data div").filter({has: page.locator("dt", {hasText: /^OUT$/})}).locator("dd");
+  await expect(memoryOut).toHaveText("—");
+  for (const phase of ["fetch", "decode", "execute"]) {
+    await step.click();
+    await expect(page.locator("#cpu-stage-" + phase)).toHaveAttribute("aria-current", "step");
+  }
+  for (let i = 3; i < 15; i++) await step.click();
+  await expect(memoryOut).toHaveText("8");
+  await expect(step).toBeDisabled();
+  await page.getByRole("button", {name: "Advanced mode"}).click();
+  await expect(page.locator("#advanced-live")).toContainText("Model ticks: 15");
+  await reset.click();
+  await expect(memoryOut).toHaveText("—");
+  await expect(step).toBeEnabled();
+  await expect(page.locator("#advanced-live")).toContainText("Model ticks: 0");
+});
+
+const rowValue = (page, container, label) => page.locator(container + " > div")
+  .filter({has: page.locator("dt", {hasText: label})}).locator("dd");
+const stepMany = async (page, selector, count) => {
+  for (let i=0; i<count; i++) await page.locator(selector).click();
+};
+
+test("all five CPU chapters link to each other and support Back at phone width", async ({page}) => {
+  await page.setViewportSize({width:390,height:844});
+  const pageErrors=[];
+  page.on("pageerror",e=>pageErrors.push(e.message));
+  await open(page,"cpu");
+  for (const [from,to,title] of [["cpu","alu","Inside the ALU"],["alu","memory","Registers & memory"],
+      ["memory","cache","Cache"],["cache","pipeline","Pipelines & branches"],["pipeline","cpu","The whole CPU"]]) {
+    const link=page.locator("#"+from+"-workbench .cpu-roadmap").getByRole("link",{name:new RegExp(title)});
+    await expect(link).toBeVisible();
+    await link.click();
+    await expect(page).toHaveURL(new RegExp("#"+to+"$"));
+    await expect(page.locator("#lesson-title")).toBeFocused();
+    await expect(page.locator("#"+to+"-workbench")).toBeVisible();
+    await expect(page.locator("#"+from+"-workbench")).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  }
+  await page.goBack();
+  await expect(page.locator("#pipeline-workbench")).toBeVisible();
+  await page.goForward();
+  await expect(page.locator("#cpu-workbench")).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
+
+test("ALU traces the carry and separates unsigned carry from signed overflow", async ({page}) => {
+  await open(page,"alu");
+  const bit=page.getByRole("button",{name:"A bit 0 (1s place)"});
+  await expect(bit).toHaveAttribute("aria-pressed","true");
+  await bit.press("Space");
+  await expect(bit).toHaveAttribute("aria-pressed","false");
+  await expect(bit).toBeFocused();
+  await page.locator("#alu-reset").click();
+  await page.locator("#alu-step").click();
+  await expect(page.locator(".alu-connector[data-pulse=true]")).toHaveCount(1);
+  await stepMany(page,"#alu-step",3);
+  await expect(page.locator("#alu-sum")).toHaveText("1000 (8)");
+  await expect(page.locator("#alu-overflow")).toHaveText("Yes");
+  await expect(page.locator("#alu-carry")).toHaveText("0");
+  await page.locator("#alu-example-carry").click();
+  await stepMany(page,"#alu-step",4);
+  await expect(page.locator("#alu-carry")).toHaveText("1");
+  await expect(page.locator("#alu-overflow")).toHaveText("No");
+});
+
+test("LOAD and STORE move data while ADD changes only the chosen register", async ({page}) => {
+  await open(page,"memory");
+  const r1=rowValue(page,"#memory-reg-values",/^R1$/);
+  const ramA=rowValue(page,"#memory-ram-values",/^\[A\]/);
+  await page.locator("#memory-source").selectOption("1");
+  await page.locator("#memory-register").selectOption("1");
+  await page.locator("#memory-destination").selectOption("0");
+  await page.locator("#memory-load").click();
+  await expect(r1).toHaveText("5");
+  await expect(page.locator("#memory-workbench")).toHaveAttribute("data-path","in");
+  await page.locator("#memory-add").click();
+  await expect(r1).toHaveText("10");
+  await expect(ramA).toHaveText("3");
+  await page.locator("#memory-store").click();
+  await expect(ramA).toHaveText("10");
+  await expect(page.locator("#memory-workbench")).toHaveAttribute("data-path","out");
+  await page.locator("#memory-reset").click();
+  await expect(ramA).toHaveText("3");
+  await expect(r1).toHaveText("0");
+});
+
+test("cache warm-up, two-line conflicts and four-line recovery stay distinct", async ({page}) => {
+  await page.emulateMedia({reducedMotion:"reduce"});
+  await open(page,"cache");
+  await page.locator("#cache-step").click();
+  await expect(page.locator("#cache-workbench")).toHaveAttribute("data-path","miss");
+  await expect(page.locator("#cache-wire-near span")).toHaveCount(0);
+  await stepMany(page,"#cache-step",7);
+  await expect(page.locator("#cache-hits")).toHaveText("6");
+  await expect(page.locator("#cache-rate")).toHaveText("100%");
+  await page.locator("#cache-pattern").selectOption("conflict");
+  await stepMany(page,"#cache-step",8);
+  await expect(page.locator("#cache-note")).toContainText("evicted address");
+  await expect(page.locator("#cache-misses")).toHaveText("8");
+  await expect(page.locator("#cache-rate")).toHaveText("0%");
+  await page.locator("#cache-size").selectOption("4");
+  await stepMany(page,"#cache-step",8);
+  await expect(page.locator("#cache-hits")).toHaveText("6");
+  await expect(page.locator("#cache-ticks")).toHaveText("22");
+});
+
+test("pipeline discards the wrong path, commits the same value with a correct guess and can run serially", async ({page}) => {
+  await open(page,"pipeline");
+  const discarded=rowValue(page,"#pipeline-counts",/^Flushed$/);
+  const outputRam=rowValue(page,"#pipeline-counts",/^RAM \[OUT\]$/);
+  const cycle=rowValue(page,"#pipeline-counts",/^Cycles$/);
+  await stepMany(page,"#pipeline-step",4);
+  await expect(discarded).toHaveText("2");
+  await expect(outputRam).toHaveText("0");
+  await expect(page.locator("#pipeline-stages [data-state=flushed]")).toHaveCount(2);
+  await stepMany(page,"#pipeline-step",5);
+  await expect(outputRam).toHaveText("8");
+  await expect(cycle).toHaveText("9");
+  await page.locator("#pipeline-prediction").selectOption("taken");
+  await stepMany(page,"#pipeline-step",7);
+  await expect(discarded).toHaveText("0");
+  await expect(outputRam).toHaveText("8");
+  await expect(cycle).toHaveText("7");
+  await page.locator("#pipeline-mode").selectOption("serial");
+  await expect(page.locator("#pipeline-prediction")).toBeDisabled();
+  await stepMany(page,"#pipeline-step",15);
+  await expect(outputRam).toHaveText("8");
+  await expect(cycle).toHaveText("15");
+});
+
+test("tube heater, grid and plate voltages affect current and compare with the MOSFET", async ({page}) => {
+  await open(page,"vacuum-tubes");
+  const heater=page.getByRole("checkbox",{name:"Cathode heater"});
+  const grid=control(page,"Grid voltage");
+  const plate=control(page,"Plate voltage");
+  await expect(output(page)).toHaveText("3.20 mA");
+  await heater.uncheck();
+  await expect(output(page)).toHaveText("0.00 mA");
+  await heater.check();
+  for(let i=0;i<8;i++) await grid.press("ArrowLeft");
+  await expect(grid).toHaveValue("-6");
+  await expect(output(page)).toHaveText("0.00 mA");
+  await expect(page.locator("#result-note")).toContainText("Cutoff");
+  for(let i=0;i<8;i++) await plate.press("ArrowRight");
+  await expect(plate).toHaveValue("160");
+  await expect(output(page)).toHaveText("1.13 mA");
+  await page.getByRole("button",{name:"Advanced mode"}).click();
+  await expect(page.locator("#advanced-live")).toContainText("Drive = 2.00 V");
+  await page.getByRole("button",{name:"Reset",exact:true}).click();
+  await expect(output(page)).toHaveText("3.20 mA");
+  await page.getByRole("link",{name:/Try controlling a transistor/}).click();
+  await expect(page).toHaveURL(/#transistors$/);
+  await expect(heater).toHaveCount(0);
+  await expect(control(page,"Gate voltage")).toBeVisible();
+  await page.getByRole("link",{name:/Try controlling a vacuum tube/}).click();
+  await expect(page).toHaveURL(/#vacuum-tubes$/);
+  await expect(heater).toBeChecked();
 });
